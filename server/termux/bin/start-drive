@@ -1,0 +1,30 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Start the drive (SFTPGo: web UI :8080, WebDAV :10080, SFTP :2022) if it is not running.
+# Settings come from ~/sftpgo-ui/drive.env (see server/sftpgo/drive.env.example).
+set -u
+
+ENV_FILE="$HOME/sftpgo-ui/drive.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "start-drive: $ENV_FILE not found - run server/install.sh first" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+. "$ENV_FILE"
+
+CFG="$PREFIX/etc/sftpgo"
+mkdir -p "$PREFIX/var/lib/sftpgo" "$SFTPGO_DATA_PROVIDER__USERS_BASE_DIR"
+
+# Persistent session-signing key: keeps web logins valid across restarts and reboots.
+if [ ! -s "$SFTPGO_HTTPD__SIGNING_PASSPHRASE_FILE" ]; then
+  (umask 077; head -c 48 /dev/urandom | base64 | tr -d '\n=+/' > "$SFTPGO_HTTPD__SIGNING_PASSPHRASE_FILE")
+fi
+
+# First run: create the SQLite database.
+if [ ! -f "$PREFIX/var/lib/sftpgo/sftpgo.db" ]; then
+  sftpgo initprovider --config-dir "$CFG" >/dev/null 2>&1
+fi
+
+# The '^' anchor matters: without it pgrep also matches shells whose command line mentions sftpgo.
+if ! pgrep -f '^sftpgo serve' >/dev/null; then
+  (nohup sftpgo serve --config-dir "$CFG" --log-file-path "$HOME/.sftpgo.log" >/dev/null 2>&1 &)
+fi

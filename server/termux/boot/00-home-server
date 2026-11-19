@@ -1,0 +1,25 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Runs automatically after the phone boots and is unlocked once (Termux:Boot add-on).
+# Starts SSH, the drive and the tunnel. Log: ~/.boot.log
+export PATH=/data/data/com.termux/files/usr/bin:$PATH
+LOG=$HOME/.boot.log
+echo "=== boot $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
+
+# Keep the CPU awake so services keep running with the screen off.
+termux-wake-lock
+
+# Wait (max ~60 s) for internet, so the tunnel can connect straight away.
+# Note: Termux has no `ip` command; curl is used instead.
+i=0
+while [ $i -lt 30 ] && ! curl -s -o /dev/null --max-time 2 https://www.cloudflare.com/cdn-cgi/trace; do
+  sleep 2; i=$((i+1))
+done
+echo "network ok after ~$((i*2))s" >> "$LOG"
+
+pgrep -x sshd >/dev/null || sshd
+"$HOME/bin/start-drive"
+sleep 3
+[ -f "$HOME/.cloudflared/config.yml" ] && "$HOME/bin/start-tunnel"
+sleep 8
+
+echo "$(date '+%H:%M:%S') sshd=$(pgrep -x sshd | wc -l) sftpgo=$(ps -e -o args | grep -c '^sftpgo serve') tunnel=$(ps -e -o args | grep -c '^cloudflared .*tunnel.* run')" >> "$LOG"

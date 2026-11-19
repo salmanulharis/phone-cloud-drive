@@ -1,0 +1,8 @@
+# --- phone-cloud-drive: start services whenever Termux is opened ---
+# (Termux:Boot starts them after a reboot; this covers opening Termux manually.)
+export PATH="$HOME/bin:$PATH"
+pgrep -x sshd >/dev/null || sshd
+termux-wake-lock
+~/bin/start-drive
+[ -f ~/.cloudflared/config.yml ] && ~/bin/start-tunnel
+# --- end phone-cloud-drive ---

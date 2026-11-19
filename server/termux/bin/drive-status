@@ -1,0 +1,31 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Quick health check of the home server: services, ports, storage and the last boot.
+set -u
+
+ok()   { printf '  \033[32m●\033[0m %s\n' "$1"; }
+bad()  { printf '  \033[31m●\033[0m %s\n' "$1"; }
+check() { if eval "$2" >/dev/null 2>&1; then ok "$1"; else bad "$1"; fi; }
+
+echo "Services"
+check "SSH server (port 8022)"       "pgrep -x sshd"
+check "Drive / SFTPGo"               "pgrep -f '^sftpgo serve'"
+check "Cloudflare tunnel"            "pgrep -f '^cloudflared .*tunnel.* run'"
+
+echo "Endpoints (local)"
+check "Web UI   http://127.0.0.1:8080"  "curl -s -o /dev/null --max-time 3 http://127.0.0.1:8080/web/client/login"
+check "WebDAV   http://127.0.0.1:10080" "curl -s -o /dev/null --max-time 3 http://127.0.0.1:10080/"
+
+echo "Storage"
+if [ -f "$HOME/sftpgo-ui/drive.env" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/sftpgo-ui/drive.env"
+  echo "  drive folder: $SFTPGO_DATA_PROVIDER__USERS_BASE_DIR ($(du -sh "$SFTPGO_DATA_PROVIDER__USERS_BASE_DIR" 2>/dev/null | cut -f1))"
+fi
+df -h /sdcard 2>/dev/null | awk 'NR==2 {print "  phone storage: " $4 " free of " $2}'
+
+echo "Network"
+ip_addr=$(ifconfig 2>/dev/null | grep -A1 '^wlan0' | grep -oE 'inet [0-9.]+' | cut -d' ' -f2)
+echo "  Wi-Fi address: ${ip_addr:-unknown}"
+
+echo "Last boot"
+tail -n 3 "$HOME/.boot.log" 2>/dev/null | sed 's/^/  /' || echo "  (no boot log yet)"

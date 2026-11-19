@@ -1,0 +1,34 @@
+--- a/webclient/sharedownload.html
++++ b/webclient/sharedownload.html
+@@ -38,7 +38,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
+         </div>
+         <div class="card-body">
+             <div>
+-                <a href="{{.DownloadLink}}" class="btn btn-primary btn-block">
++                <a id="drive_share_download" href="{{.DownloadLink}}" class="btn btn-primary btn-block">
+                     <i class="ki-duotone ki-folder-down fs-2">
+                         <span class="path1"></span>
+                         <span class="path2"></span>
+@@ -50,3 +50,22 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
+     </div>
+ </div>
+ {{- end}}
++
++{{- define "extra_js"}}
++<script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
++    // phone-cloud-drive: a share with a single file downloads the file itself instead of a zip.
++    // Probe the uncompressed link with a 1-byte range request; keep the zip for folders / multiple files.
++    (function () {
++        const a = document.getElementById('drive_share_download');
++        if (!a) return;
++        const url = new URL(a.getAttribute('href'), location.href);
++        url.searchParams.set('compress', 'false');
++        fetch(url, { headers: { Range: 'bytes=0-0' } }).then(function (r) {
++            const type = (r.headers.get('content-type') || '').toLowerCase();
++            if ((r.status === 200 || r.status === 206) && !type.startsWith('text/html') && !type.includes('json')) {
++                a.setAttribute('href', url.pathname + url.search);
++            }
++        }).catch(function () {});
++    })();
++</script>
++{{- end}}

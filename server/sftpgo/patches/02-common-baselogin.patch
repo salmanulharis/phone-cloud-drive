@@ -1,0 +1,58 @@
+--- a/common/baselogin.html
++++ b/common/baselogin.html
+@@ -36,6 +36,55 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
+ 
+     <body class="app-blank">
+         {{- template "theme-setup" .CSPNonce}}
++        <style {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
++            #drive_theme_toggle { position: fixed; top: 14px; right: 14px; z-index: 1050; display: inline-flex; align-items: center; gap: 6px;
++                padding: 7px 12px; border-radius: 999px; border: 1px solid var(--bs-gray-300); background: var(--bs-body-bg);
++                color: var(--bs-gray-700); font-size: 13px; font-weight: 600; cursor: pointer; }
++            #drive_theme_toggle:hover { color: var(--bs-primary); border-color: var(--bs-primary); }
++            #drive_theme_toggle svg { width: 16px; height: 16px; }
++            @media (max-width: 575.98px) { .flex-center.p-10 { padding: 16px !important; } .bg-body.rounded.p-10 { padding: 24px !important; width: 100%; } }
++        </style>
++        <button type="button" id="drive_theme_toggle" aria-label="Switch theme">
++            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path id="drive_theme_icon" d=""></path></svg>
++            <span id="drive_theme_label"></span>
++        </button>
++        <script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
++            (function () {
++                // Same storage key/values as SFTPGo's own theme menu, so the choice carries over after sign-in.
++                var icons = {
++                    light: "M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM3.5 4.9l1.4-1.4 2.1 2.1-1.4 1.4zm12.5 12.5 1.4-1.4 2.1 2.1-1.4 1.4zM1 11h3v2H1zm19 0h3v2h-3zM3.5 19.1l2.1-2.1 1.4 1.4-2.1 2.1zM16 5.6l2.1-2.1 1.4 1.4-2.1 2.1z",
++                    dark: "M12.3 22c5.5 0 10-4.5 10-10 0-.5 0-1-.1-1.4A7 7 0 0 1 12.8 2.1C12.6 2 12.5 2 12.3 2 6.8 2 2.3 6.5 2.3 12s4.5 10 10 10z",
++                    system: "M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6v2h3v2H7v-2h3v-2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v10h16V6z"
++                };
++                var labels = { light: "Light", dark: "Dark", system: "Auto" };
++                var order = ["system", "light", "dark"];
++                // SFTPGo (KTThemeMode) keeps the choice in "data-bs-theme-mode" and the resolved theme in "data-bs-theme".
++                function current() {
++                    try {
++                        var m = localStorage.getItem("data-bs-theme-mode");
++                        return (m === "light" || m === "dark" || m === "system") ? m : "system";
++                    } catch (e) { return "system"; }
++                }
++                function apply(mode) {
++                    var resolved = mode === "system" ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : mode;
++                    document.documentElement.setAttribute("data-bs-theme", resolved);
++                    try { localStorage.setItem("data-bs-theme-mode", mode); localStorage.setItem("data-bs-theme", resolved); } catch (e) {}
++                    document.getElementById("drive_theme_icon").setAttribute("d", icons[mode]);
++                    document.getElementById("drive_theme_label").textContent = labels[mode];
++                }
++                apply(current());
++                document.getElementById("drive_theme_toggle").addEventListener("click", function () {
++                    apply(order[(order.indexOf(current()) + 1) % order.length]);
++                });
++                // The admin panel is LAN-only; hide its link on the public site.
++                document.addEventListener("DOMContentLoaded", function () {
++                    var lan = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
++                    if (!lan) {
++                        document.querySelectorAll('a[href*="/web/admin"]').forEach(function (a) { a.style.display = "none"; });
++                    }
++                });
++            })();
++        </script>
+ 		<div id="app_loader" class="align-items-center text-center my-10">
+             <span class="spinner-border w-15px h-15px text-muted align-middle me-2"></span>
+         </div>

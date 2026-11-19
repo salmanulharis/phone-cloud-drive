@@ -1,0 +1,29 @@
+# ---- local configuration with your own values (never commit) ----
+server/cloudflared/tunnel.env
+*.env
+!*.env.example
+*.key
+*.pem
+.cloudflared/
+credentials*.json
+
+# ---- Android / Gradle ----
+android/.gradle/
+android/build/
+android/app/build/
+android/.kotlin/
+android/local.properties
+android/captures/
+android/.idea/
+*.iml
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# ---- editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,183 @@
+/*
+ * phone-cloud-drive: "Drive" theme layer for the SFTPGo web UI.
+ * Loaded after SFTPGo's own CSS via branding.extra_css, so it only overrides looks.
+ */
+
+/* ---------- brand colours ---------- */
+:root,
+[data-bs-theme="light"] {
+    --drive-bg: #f6f7fb;
+    --drive-border: #eceef3;
+    --drive-muted: #6b7280;
+    --bs-app-bg-color: #f6f7fb;
+    --bs-app-blank-bg-color: #f6f7fb;
+    --bs-primary: #4f46e5;
+    --bs-primary-rgb: 79, 70, 229;
+    --bs-primary-active: #4338ca;
+    --bs-primary-light: #eef2ff;
+    --bs-primary-inverse: #ffffff;
+    --bs-text-primary: #4f46e5;
+    --bs-link-color: #4f46e5;
+    --bs-link-color-rgb: 79, 70, 229;
+    --bs-link-hover-color: #4338ca;
+    --bs-component-active-bg: #4f46e5;
+}
+
+[data-bs-theme="dark"] {
+    --drive-bg: #0e0f13;
+    --drive-border: #1f2129;
+    --drive-muted: #9aa0ad;
+    --bs-app-bg-color: #0e0f13;
+    --bs-app-blank-bg-color: #0e0f13;
+    --bs-primary: #7c74ff;
+    --bs-primary-rgb: 124, 116, 255;
+    --bs-primary-active: #6a61f5;
+    --bs-primary-light: #1d1b36;
+    --bs-primary-inverse: #ffffff;
+    --bs-text-primary: #8e87ff;
+    --bs-link-color: #8e87ff;
+    --bs-link-color-rgb: 142, 135, 255;
+    --bs-link-hover-color: #a7a1ff;
+    --bs-component-active-bg: #7c74ff;
+}
+
+body {
+    background-color: var(--drive-bg) !important;
+}
+
+/* ---------- surfaces ---------- */
+.card {
+    border-radius: 16px !important;
+    border: 1px solid var(--drive-border) !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04) !important;
+}
+.card > .card-header {
+    border-bottom-color: var(--drive-border) !important;
+}
+.modal-content {
+    border-radius: 18px !important;
+    border: 1px solid var(--drive-border);
+}
+.btn {
+    border-radius: 10px !important;
+    font-weight: 600;
+}
+.form-control,
+.form-select {
+    border-radius: 10px !important;
+}
+.badge {
+    border-radius: 8px;
+}
+.menu-sub-dropdown {
+    border-radius: 14px !important;
+    border: 1px solid var(--drive-border);
+}
+
+/* ---------- top bar: frosted glass ---------- */
+.app-header {
+    background-color: color-mix(in srgb, var(--drive-bg) 82%, transparent) !important;
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
+    backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--drive-border);
+    box-shadow: none !important;
+}
+
+/* ---------- sidebar ---------- */
+.app-sidebar-logo img {
+    border-radius: 10px;
+}
+[data-bs-theme="dark"] .app-sidebar {
+    border-right: 1px solid var(--drive-border);
+}
+[data-bs-theme="dark"] .app-sidebar-navs .menu .menu-item .menu-link.active,
+[data-bs-theme="dark"] .app-sidebar-navs .menu .menu-item.here > .menu-link {
+    background-color: rgba(124, 116, 255, .14) !important;
+}
+.app-sidebar-navs .menu .menu-item .menu-link {
+    border-radius: 10px !important;
+}
+
+/* ---------- file list ---------- */
+#file_manager_list thead th {
+    font-size: .72rem !important;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--drive-muted) !important;
+}
+#file_manager_list tbody tr {
+    transition: background-color .15s ease;
+}
+#file_manager_list tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), .05);
+}
+#file_manager_list tbody td {
+    border-bottom-color: var(--drive-border) !important;
+}
+#file_manager_list .drive-name-cell a {
+    font-weight: 600;
+}
+/* size and date stay on one line */
+#file_manager_list > tbody > tr > td:nth-child(3),
+#file_manager_list > tbody > tr > td:nth-child(4),
+#file_manager_list > thead > tr > th:nth-child(3),
+#file_manager_list > thead > tr > th:nth-child(4) {
+    white-space: nowrap;
+}
+[data-kt-filemanager-table-nav-bar] {
+    border-radius: 10px !important;
+}
+@media (max-width: 767.98px) {
+    .card-header .card-title input.form-control[data-kt-filemanager-table-filter="search"] {
+        width: 100% !important;
+    }
+}
+
+/* ---------- footer: keep it quiet ---------- */
+#kt_app_footer {
+    opacity: .55;
+    font-size: .8rem;
+}
+
+/* ---------- sign-in page ---------- */
+body.app-blank {
+    background:
+        radial-gradient(1100px 600px at 0% -10%, rgba(var(--bs-primary-rgb), .16), transparent 60%),
+        radial-gradient(900px 520px at 110% 110%, rgba(147, 51, 234, .12), transparent 60%),
+        var(--drive-bg) !important;
+    min-height: 100vh;
+}
+body.app-blank .bg-body.rounded {
+    border-radius: 22px !important;
+    border: 1px solid var(--drive-border);
+    box-shadow: 0 12px 40px rgba(16, 24, 40, .08) !important;
+}
+body.app-blank img[alt="Logo"] {
+    border-radius: 14px;
+}
+
+/* ---------- drop-anywhere overlay ---------- */
+#drive_drop_overlay {
+    position: fixed;
+    inset: 12px;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 2px dashed var(--bs-primary);
+    border-radius: 20px;
+    background: rgba(var(--bs-primary-rgb), .08);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    pointer-events: none;
+}
+#drive_drop_overlay.show {
+    display: flex;
+}
+#drive_drop_overlay .ki-duotone {
+    color: var(--bs-primary);
+}

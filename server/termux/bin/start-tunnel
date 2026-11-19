@@ -1,0 +1,14 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Start the Cloudflare Tunnel (public HTTPS hostnames -> local drive) if it is not running.
+# The tunnel is configured by ~/.cloudflared/config.yml (see server/cloudflared/).
+set -u
+
+CONFIG="$HOME/.cloudflared/config.yml"
+if [ ! -f "$CONFIG" ]; then
+  echo "start-tunnel: $CONFIG not found - run server/cloudflared/setup-tunnel.sh first" >&2
+  exit 1
+fi
+
+if ! pgrep -f '^cloudflared .*tunnel.* run' >/dev/null; then
+  (nohup cloudflared --no-autoupdate tunnel --config "$CONFIG" run > "$HOME/.cloudflared/tunnel.log" 2>&1 &)
+fi

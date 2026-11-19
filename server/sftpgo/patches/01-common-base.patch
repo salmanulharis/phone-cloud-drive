@@ -1,0 +1,46 @@
+--- a/common/base.html
++++ b/common/base.html
+@@ -382,6 +382,43 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
+ 		color: var(--bs-white);
+     }
+ 
++    /* ---- Light theme: light sidebar (stock theme keeps it black in both modes) ---- */
++    [data-bs-theme="light"] {
++        --bs-app-sidebar-base-bg-color: #ffffff;
++    }
++    [data-bs-theme="light"] .app-sidebar {
++        background-color: #ffffff !important;
++        border-right: 1px solid #eef0f4;
++    }
++    [data-bs-theme="light"] .text-sidebar { color: #1e2129; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-heading { color: #99a1b7; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link .menu-title { color: #4b5675 !important; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link .menu-icon,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link .menu-icon i,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link .menu-icon .svg-icon { color: #99a1b7 !important; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link .menu-arrow:after,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link .menu-bullet .bullet { background-color: #99a1b7 !important; }
++    /* hover */
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item:not(.here) .menu-link:hover:not(.disabled):not(.active) { background-color: #f5f7fa !important; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item:not(.here) .menu-link:hover:not(.disabled):not(.active) .menu-title,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item:not(.here) .menu-link:hover:not(.disabled):not(.active) .menu-icon i { color: var(--bs-primary) !important; }
++    /* active page / open group */
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link.active,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.here > .menu-link { background-color: #eef3ff !important; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link.active .menu-title,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link.active .menu-icon i,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.here > .menu-link .menu-title,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.here > .menu-link .menu-icon i,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.show > .menu-link .menu-title,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.show > .menu-link .menu-icon i { color: var(--bs-primary) !important; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item .menu-link.active .menu-bullet .bullet,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.here > .menu-link .menu-arrow:after,
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-item.show > .menu-link .menu-arrow:after { background-color: var(--bs-primary) !important; }
++    [data-bs-theme="light"] .app-sidebar-navs .menu .menu-collapse-toggle .menu-title { color: #78829d !important; }
++    [data-bs-theme="light"] .app-sidebar .hover-scroll-y:hover::-webkit-scrollbar-thumb { background-color: #d8dbe3; }
++    [data-bs-theme="light"] .app-sidebar .hover-scroll-y:hover { scrollbar-color: #d8dbe3 transparent; }
++
+     .wrap-word {
+         overflow-wrap: break-word;
+     }

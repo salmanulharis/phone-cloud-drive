@@ -1,0 +1,15 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Sign out every drive web session on every device (e.g. after a lost phone or laptop).
+# Replaces the session-signing key and restarts the drive. Users simply sign in again.
+set -eu
+
+# shellcheck source=/dev/null
+. "$HOME/sftpgo-ui/drive.env"
+
+(umask 077; head -c 48 /dev/urandom | base64 | tr -d '\n=+/' > "$SFTPGO_HTTPD__SIGNING_PASSPHRASE_FILE")
+
+pkill -f '^sftpgo serve' || true
+for _ in $(seq 1 10); do pgrep -f '^sftpgo serve' >/dev/null || break; sleep 1; done
+"$HOME/bin/start-drive"
+sleep 3
+echo "All drive sessions have been signed out."
