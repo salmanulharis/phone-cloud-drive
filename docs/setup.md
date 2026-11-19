@@ -36,7 +36,7 @@ In Termux:
 
 ```sh
 pkg install -y git
-git clone https://github.com/<owner>/phone-cloud-drive.git
+git clone https://github.com/salmanulharis/phone-cloud-drive.git
 cd phone-cloud-drive
 bash server/install.sh
 ```
