@@ -1,16 +1,23 @@
 package app.phoneclouddrive.admin
 
 import android.app.Application
-import android.os.Environment
 import android.os.StatFs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.phoneclouddrive.admin.server.Cloudflare
+import app.phoneclouddrive.admin.server.ServerController
+import app.phoneclouddrive.admin.server.ServerMode
+import app.phoneclouddrive.admin.server.ServerSettings
+import app.phoneclouddrive.admin.server.ServerState
+import app.phoneclouddrive.admin.server.SftpgoConfig
+import app.phoneclouddrive.admin.server.Zone
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,8 +37,169 @@ enum class Access(val label: String, val perms: List<String>) {
     }
 }
 
-class AppViewModel(app: Application) : AndroidViewModel(app) {
+class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("drive_admin", 0)
+    val settings = ServerSettings(app)
+
+    // ---- mode / setup ----
+
+    var mode by mutableStateOf(settings.mode)
+        private set
+    var setupDone by mutableStateOf(settings.setupDone)
+        private set
+    val builtIn get() = mode == ServerMode.BUILT_IN
+
+    fun chooseMode(m: ServerMode) {
+        if (m != mode) {
+            if (mode == ServerMode.BUILT_IN) ServerController.stop(app)
+            logout()
+        }
+        settings.mode = m
+        mode = m
+        if (m == ServerMode.BUILT_IN && serverState.driveHealthy && !loggedIn) connectBuiltIn()
+    }
+
+    fun finishSetup() {
+        settings.setupDone = true
+        setupDone = true
+    }
+
+    // ---- built-in server ----
+
+    var serverState by mutableStateOf(ServerState())
+        private set
+
+    var lanAccess by mutableStateOf(settings.lanAccess)
+        private set
+    var startOnBoot by mutableStateOf(settings.startOnBoot)
+        private set
+    var storageBase by mutableStateOf(settings.storageBase)
+        private set
+    var driveHost by mutableStateOf(settings.driveHost)
+        private set
+    var davHost by mutableStateOf(settings.davHost)
+        private set
+    var hasTunnel by mutableStateOf(settings.hasTunnel)
+        private set
+
+    /** The admin password was rejected once and a reset was requested; don't loop on it. */
+    private var adminResetRequested = false
+
+    fun startServer() = ServerController.start(app)
+
+    fun stopServer() = ServerController.stop(app)
+
+    fun changeLanAccess(on: Boolean) {
+        settings.lanAccess = on
+        lanAccess = on
+        ServerController.applySettings(app)
+    }
+
+    fun changeStartOnBoot(on: Boolean) {
+        settings.startOnBoot = on
+        startOnBoot = on
+    }
+
+    fun setStorage(path: String) {
+        settings.storageBase = path
+        storageBase = path
+        ServerController.applySettings(app)
+        notice = "New users will be stored in ${prettyPath(path)}"
+    }
+
+    fun signOutEverywhere() {
+        ServerController.signOutEverywhere(app)
+        notice = "Every web and WebDAV session has been signed out"
+    }
+
+    private fun connectBuiltIn() = task {
+        api = SftpgoApi("http://${SftpgoConfig.LOOPBACK}:${SftpgoConfig.ADMIN_PORT}")
+        try {
+            api.login(ServerSettings.ADMIN_USER, settings.adminPassword())
+        } catch (e: ApiException) {
+            if (e.code == 401 && !adminResetRequested) {
+                // The stored admin password no longer matches (e.g. Keystore reset): recreate the
+                // admin account. Users, shares and files are not affected.
+                adminResetRequested = true
+                notice = "Repairing the app's admin access…"
+                ServerController.resetAdmin(app)
+                return@task
+            }
+            throw e
+        }
+        adminResetRequested = false
+        try {
+            api.ensureDefenderSafe("127.0.0.1/32", "This phone (Drive Admin app)")
+            api.ensureDefenderSafe("::1/128", "This phone (Drive Admin app)")
+        } catch (e: ApiException) {
+            // Not fatal: the drive works without it, the app just isn't protected from a lockout.
+        }
+        loggedIn = true
+        load()
+    }
+
+    // ---- Cloudflare ----
+
+    var zones by mutableStateOf<List<Zone>>(emptyList())
+        private set
+
+    fun loadZones(apiToken: String) = task {
+        val list = Cloudflare(apiToken.trim()).zones()
+        if (list.isEmpty()) error("No active domains found for this token. Check its Zone permissions.")
+        zones = list
+    }
+
+    fun setUpTunnel(apiToken: String, zone: Zone, driveSub: String, davSub: String, onDone: () -> Unit) = task {
+        val drive = hostFor(driveSub, zone.name)
+        val dav = if (davSub.isBlank()) "" else hostFor(davSub, zone.name)
+        val result = Cloudflare(apiToken.trim()).setUp(zone, Cloudflare.TUNNEL_NAME, drive, dav)
+        saveTunnel(result.token, result.driveHost, result.davHost)
+        zones = emptyList()
+        notice = "Connected. Your drive will be at https://${result.driveHost}"
+        onDone()
+    }
+
+    fun saveManualTunnel(token: String, drive: String, dav: String, onDone: () -> Unit) = task {
+        val t = token.trim().removePrefix("cloudflared service install").trim()
+        if (Cloudflare.tunnelIdFromToken(t) == null) error("That doesn't look like a tunnel token. Copy it from the tunnel's install command.")
+        saveTunnel(t, cleanHost(drive), cleanHost(dav))
+        notice = "Tunnel saved"
+        onDone()
+    }
+
+    fun removeTunnel() {
+        settings.clearTunnel()
+        refreshTunnelState()
+        ServerController.applySettings(app)
+        notice = "Cloudflare connection removed from this phone"
+    }
+
+    private fun saveTunnel(token: String, drive: String, dav: String) {
+        settings.tunnelToken = token
+        settings.driveHost = drive
+        settings.davHost = dav
+        refreshTunnelState()
+        if (serverState.active) ServerController.applySettings(app)
+    }
+
+    private fun refreshTunnelState() {
+        hasTunnel = settings.hasTunnel
+        driveHost = settings.driveHost
+        davHost = settings.davHost
+    }
+
+    private fun hostFor(sub: String, zone: String): String {
+        val s = sub.trim().lowercase().trim('.')
+        require(s.isEmpty() || Regex("[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*").matches(s)) {
+            "\"$sub\" isn't a valid subdomain"
+        }
+        return if (s.isEmpty()) zone else "$s.$zone"
+    }
+
+    private fun cleanHost(h: String) = h.trim().lowercase()
+        .removePrefix("https://").removePrefix("http://").trimEnd('/')
+
+    // ---- admin API session (built-in: automatic; external: login form) ----
 
     var server by mutableStateOf(prefs.getString("server", "http://127.0.0.1:8080")!!)
     var adminUser by mutableStateOf(prefs.getString("admin", "")!!)
@@ -52,18 +220,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private var api = SftpgoApi(server)
     private val secure = SecureStore(app)
 
-    /** "Stay signed in": keep the admin password encrypted in the Android Keystore. */
+    /** "Stay signed in" (external server): keep the admin password encrypted in the Android Keystore. */
     var staySignedIn by mutableStateOf(prefs.getBoolean("stay_signed_in", true))
 
     /** True while signing in automatically with the saved password. */
     var autoSigningIn by mutableStateOf(false)
         private set
 
-    init {
-        autoLogin()
-    }
-
-    /** Sign in with the saved password, if any (app start, after a reboot, or "Retry"). */
+    /** Sign in to an external server with the saved password, if any. */
     fun autoLogin() {
         if (loggedIn || !staySignedIn || adminUser.isBlank() || !secure.hasSaved()) return
         val saved = secure.load() ?: return
@@ -87,12 +251,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasSavedLogin: Boolean
         get() = secure.hasSaved()
 
-    /** True when the app runs on the server phone itself, so local storage stats are meaningful. */
+    /** True when the drive's files are on this phone, so file browsing and storage stats work. */
     val isLocalServer: Boolean
-        get() = server.contains("127.0.0.1") || server.contains("localhost")
+        get() = builtIn || server.contains("127.0.0.1") || server.contains("localhost")
 
+    /** Free and total bytes of the volume holding the drive. */
     fun phoneStorage(): Pair<Long, Long> {
-        val st = StatFs(Environment.getExternalStorageDirectory().path)
+        val dir = File(if (builtIn) storageBase else ServerSettings.defaultStorageBase())
+        val probe = generateSequence(dir) { it.parentFile }.firstOrNull { it.exists() } ?: File("/sdcard")
+        val st = StatFs(probe.path)
         return st.availableBytes to st.totalBytes
     }
 
@@ -111,7 +278,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         load()
     }
 
-    /** Explicit sign-out: also forgets the saved password. */
+    /** External server: sign out and forget the saved password. */
     fun signOut() {
         secure.clear()
         logout()
@@ -126,6 +293,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh() = task { load() }
+
+    /** Background refresh while the app is open: no spinner, errors are ignored. */
+    fun quietRefresh() {
+        if (!loggedIn || busy) return
+        viewModelScope.launch {
+            try {
+                load()
+            } catch (_: Exception) {
+            }
+        }
+    }
 
     private suspend fun load() {
         users = api.users().sortedBy { it.optString("username").lowercase() }
@@ -185,6 +363,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         load()
     }
 
+    // Last in the class on purpose: the collector runs immediately (Main.immediate) and touches
+    // properties declared above, which must already be initialised.
+    init {
+        viewModelScope.launch {
+            ServerController.state.collect { s ->
+                val wasHealthy = serverState.driveHealthy
+                serverState = s
+                if (!builtIn) return@collect
+                if (s.driveHealthy && !wasHealthy && !loggedIn) connectBuiltIn()
+                if (!s.active && loggedIn) logout()
+            }
+        }
+        if (mode == ServerMode.EXTERNAL) autoLogin()
+    }
+
     private fun task(block: suspend () -> Unit) {
         viewModelScope.launch {
             busy = true
@@ -234,3 +427,8 @@ fun formatTime(ms: Long): String {
         else -> DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(ms))
     }
 }
+
+/** "/storage/emulated/0/.CloudDrive" -> "Internal storage/.CloudDrive". */
+fun prettyPath(path: String): String = path
+    .replaceFirst(Regex("^(/storage/emulated/0|/sdcard|/storage/self/primary)(?=/|$)"), "Internal storage")
+    .replaceFirst(Regex("^/storage/([0-9A-F]{4}-[0-9A-F]{4})(?=/|$)"), "SD card ($1)")

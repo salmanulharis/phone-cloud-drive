@@ -63,6 +63,21 @@ class SftpgoApi(private val baseUrl: String) {
         JSONObject(request("GET", "/api/v2/status"))
     }
 
+    /**
+     * Puts [cidr] on the brute-force protection's safe list (IP list type 2, mode 1 = allow, all
+     * protocols). Used for loopback on the built-in server: visitors through the tunnel are judged
+     * by their real IP (CF-Connecting-IP), while this app's own admin connection comes from
+     * 127.0.0.1 and must never be banned.
+     */
+    suspend fun ensureDefenderSafe(cidr: String, note: String) = io {
+        val existing = JSONArray(request("GET", "/api/v2/iplists/2?filter=${enc(cidr)}")).objects()
+        if (existing.none { it.optString("ipornet") == cidr }) {
+            val entry = JSONObject().put("ipornet", cidr).put("type", 2).put("mode", 1)
+                .put("protocols", 15).put("description", note)
+            request("POST", "/api/v2/iplists/2", entry.toString())
+        }
+    }
+
     // ---- internals ----
 
     private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) {
@@ -71,7 +86,7 @@ class SftpgoApi(private val baseUrl: String) {
         } catch (e: ApiException) {
             throw e
         } catch (e: IOException) {
-            throw ApiException(0, "Can't reach the drive server at $baseUrl. Is Termux running?")
+            throw ApiException(0, "Can't reach the drive server at $baseUrl. Is it running?")
         }
     }
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_server">Drive server</string>
+    <string name="channel_server_description">Shown while the built-in drive server is running</string>
+    <string name="server_notification_title">Drive server</string>
+    <string name="server_starting">Starting…</string>
+    <string name="server_waiting">Waiting…</string>
+    <string name="server_tunnel_connecting">Running · connecting to Cloudflare…</string>
+    <string name="server_online_at">Online at %1$s</string>
+    <string name="server_online_local">Running (no Cloudflare connection set up)</string>
+    <string name="action_stop">Stop</string>
+    <string name="problem_files_access">Allow \"All files access\" for Drive Admin so the server can store files.</string>
+    <string name="problem_storage">The drive folder %1$s isn\'t available (SD card removed?).</string>
+</resources>

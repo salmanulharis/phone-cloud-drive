@@ -15,6 +15,18 @@
 | **Shares** | Optional password, expiry and usage limit; delete a share to revoke it immediately. |
 | **App login** | Drive Admin's saved password is encrypted with a non-exportable Android Keystore key. |
 
+## Built-in server (Drive Admin app)
+
+The app's built-in server is stricter than the Termux setup:
+
+| Area | Measure |
+|---|---|
+| **Admin** | SFTPGo's admin web panel is disabled. The admin REST API is on a separate binding on `127.0.0.1:28081`, which the tunnel never routes to. The admin password is random (32 characters), Keystore-encrypted and never shown. |
+| **Users** | Web drive and WebDAV listen on `127.0.0.1` only, so Cloudflare is the only way in (unless you enable *Home Wi-Fi access*). The REST API is off on the users' binding. SFTP and FTP are off. |
+| **Tunnel** | Automatic setup adds a Cloudflare-side 404 for `/web/admin` and `/api/` as a second layer. The Cloudflare API token is not stored; the tunnel token is Keystore-encrypted and passed to cloudflared through its environment (not visible in process lists). |
+| **Brute force** | Visitors are judged by their real IP (`CF-Connecting-IP`, trusted only from loopback). Loopback is on the safe list so the app itself can't be locked out; anything else on the phone that could abuse that already has local access. |
+| **App data** | Excluded from cloud backup and device transfer (database, signing key, secrets stay on the phone). |
+
 ## Known limitations
 
 - **Logged-out cookies after a restart.** SFTPGo keeps revoked (logged-out) tokens in memory. Because

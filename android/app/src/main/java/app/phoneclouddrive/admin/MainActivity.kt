@@ -1,6 +1,5 @@
 package app.phoneclouddrive.admin
 
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -38,13 +37,18 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -63,6 +67,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -70,8 +75,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -83,6 +86,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -90,6 +94,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.phoneclouddrive.admin.server.ServerMode
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
@@ -100,26 +106,61 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Fixed indigo/violet brand palette (matching the app icon and the web drive) instead of
+ * wallpaper colours, so the app looks the same on every phone.
+ */
+private val LightBrand = lightColorScheme(
+    primary = Color(0xFF4F46E5), onPrimary = Color.White,
+    primaryContainer = Color(0xFFE0E7FF), onPrimaryContainer = Color(0xFF1E1B4B),
+    secondary = Color(0xFF6D28D9), onSecondary = Color.White,
+    secondaryContainer = Color(0xFFEDE9FE), onSecondaryContainer = Color(0xFF2E1065),
+    tertiary = Color(0xFF0E7490),
+    background = Color(0xFFF8F8FC), onBackground = Color(0xFF1B1B23),
+    surface = Color(0xFFF8F8FC), onSurface = Color(0xFF1B1B23),
+    surfaceVariant = Color(0xFFE4E3EE), onSurfaceVariant = Color(0xFF4A4858),
+    surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF1F1F8),
+    surfaceContainer = Color(0xFFECECF4), surfaceContainerHigh = Color(0xFFE6E6F0),
+    surfaceContainerHighest = Color(0xFFE0E0EB),
+    outline = Color(0xFF79778A), outlineVariant = Color(0xFFCAC8D8),
+)
+
+private val DarkBrand = darkColorScheme(
+    primary = Color(0xFFA5B4FC), onPrimary = Color(0xFF1E1B4B),
+    primaryContainer = Color(0xFF312E81), onPrimaryContainer = Color(0xFFE0E7FF),
+    secondary = Color(0xFFC4B5FD), onSecondary = Color(0xFF2E1065),
+    secondaryContainer = Color(0xFF3B2F6E), onSecondaryContainer = Color(0xFFEDE9FE),
+    tertiary = Color(0xFF67E8F9),
+    background = Color(0xFF0F0F17), onBackground = Color(0xFFE5E4EF),
+    surface = Color(0xFF0F0F17), onSurface = Color(0xFFE5E4EF),
+    surfaceVariant = Color(0xFF2A2A36), onSurfaceVariant = Color(0xFFC7C5D6),
+    surfaceContainerLowest = Color(0xFF0A0A11), surfaceContainerLow = Color(0xFF17171F),
+    surfaceContainer = Color(0xFF1C1C26), surfaceContainerHigh = Color(0xFF24242F),
+    surfaceContainerHighest = Color(0xFF2C2C38),
+    outline = Color(0xFF8F8DA0), outlineVariant = Color(0xFF3F3E4D),
+)
+
 @Composable
 fun DriveAdminTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
-    val ctx = LocalContext.current
-    val scheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
-        dark -> darkColorScheme(primary = Color(0xFF9DB8FF))
-        else -> lightColorScheme(primary = Color(0xFF1E5BD7))
-    }
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkBrand else LightBrand, content = content)
 }
 
 @Composable
 fun App(vm: AppViewModel = viewModel()) {
     val snackbar = remember { SnackbarHostState() }
-    LaunchedEffect(vm.error) { vm.error?.let { snackbar.showSnackbar(it); vm.error = null } }
+    LaunchedEffect(vm.error) {
+        vm.error?.let {
+            vm.error = null
+            snackbar.showSnackbar(it, withDismissAction = true, duration = SnackbarDuration.Long)
+        }
+    }
     LaunchedEffect(vm.notice) { vm.notice?.let { snackbar.showSnackbar(it); vm.notice = null } }
 
-    if (!vm.loggedIn && vm.autoSigningIn) {
+    if (vm.mode == null || !vm.setupDone) {
+        SetupScreen(vm, snackbar)
+    } else if (vm.builtIn) {
+        MainScreen(vm, snackbar)
+    } else if (!vm.loggedIn && vm.autoSigningIn) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 BrandMark(Modifier.size(84.dp))
@@ -226,6 +267,10 @@ fun LoginScreen(vm: AppViewModel, snackbar: SnackbarHostState) {
                         modifier = Modifier.fillMaxWidth().height(50.dp)
                     ) { Text("Retry saved login") }
                 }
+                Spacer(Modifier.height(16.dp))
+                TextButton(onClick = { vm.chooseMode(ServerMode.BUILT_IN) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Run the drive on this phone instead (no Termux)")
+                }
             }
         }
     }
@@ -233,17 +278,45 @@ fun LoginScreen(vm: AppViewModel, snackbar: SnackbarHostState) {
 
 // ---------------- Main ----------------
 
+/** Bottom-bar destinations. Home (server control) only exists for the built-in server. */
+private enum class Tab(val label: String, val icon: ImageVector) {
+    HOME("Home", Icons.Filled.Home),
+    USERS("Users", Icons.Filled.Group),
+    ACTIVE("Active", Icons.Filled.Bolt),
+    SETTINGS("Settings", Icons.Filled.Settings),
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(vm: AppViewModel, snackbar: SnackbarHostState) {
-    var tab by rememberSaveable { mutableStateOf(0) }
+    val tabs = if (vm.builtIn) Tab.entries else Tab.entries - Tab.HOME
+    var tabName by rememberSaveable { mutableStateOf(tabs.first().name) }
+    val tab = tabs.firstOrNull { it.name == tabName } ?: tabs.first()
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var showAdd by rememberSaveable { mutableStateOf(false) }
     var browsing by rememberSaveable { mutableStateOf(false) }
+    var cloudflare by rememberSaveable { mutableStateOf(false) }
+    var logs by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Keep users, usage and connections fresh while the app is open.
+    LaunchedEffect(vm.loggedIn) {
+        while (vm.loggedIn) {
+            delay(15_000)
+            vm.quietRefresh()
+        }
+    }
 
     val selectedUser = selected?.let { name -> vm.users.firstOrNull { it.optString("username") == name } }
     if (selected != null && selectedUser == null && !vm.busy) selected = null
 
+    if (cloudflare) {
+        CloudflareScreen(vm, snackbar, onClose = { cloudflare = false })
+        return
+    }
+    logs?.let { name ->
+        LogsScreen(name, onClose = { logs = null })
+        return
+    }
     if (selectedUser != null && browsing) {
         FilesScreen(
             vm, selectedUser.optString("username"), selectedUser.optString("home_dir"), snackbar,
@@ -260,35 +333,55 @@ fun MainScreen(vm: AppViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Drive Admin") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BrandMark(Modifier.size(30.dp))
+                        Spacer(Modifier.size(10.dp))
+                        Text(if (tab == Tab.HOME) "Drive" else tab.label)
+                    }
+                },
                 actions = {
-                    IconButton(onClick = { vm.refresh() }, enabled = !vm.busy) { Icon(Icons.Filled.Refresh, "Refresh") }
-                    IconButton(onClick = { vm.signOut() }) { Icon(Icons.AutoMirrored.Filled.ExitToApp, "Sign out") }
+                    if (vm.loggedIn && tab != Tab.SETTINGS) {
+                        IconButton(onClick = { vm.refresh() }, enabled = !vm.busy) { Icon(Icons.Filled.Refresh, "Refresh") }
+                    }
                 }
             )
         },
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(
-                    selected = tab == 0, onClick = { tab = 0 },
-                    icon = { Icon(Icons.Filled.Person, null) }, label = { Text("Users") }
-                )
-                NavigationBarItem(
-                    selected = tab == 1, onClick = { tab = 1 },
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, null) },
-                    label = { Text("Active (${vm.connections.size})") }
-                )
+                tabs.forEach { t ->
+                    NavigationBarItem(
+                        selected = tab == t, onClick = { tabName = t.name },
+                        icon = {
+                            if (t == Tab.ACTIVE && vm.connections.isNotEmpty()) {
+                                BadgedBox(badge = { Badge { Text("${vm.connections.size}") } }) { Icon(t.icon, null) }
+                            } else {
+                                Icon(t.icon, null)
+                            }
+                        },
+                        label = { Text(t.label) }
+                    )
+                }
             }
         },
         floatingActionButton = {
-            if (tab == 0) FloatingActionButton(onClick = { showAdd = true }) { Icon(Icons.Filled.Add, "Add user") }
+            if (tab == Tab.USERS && vm.loggedIn) {
+                ExtendedFloatingActionButton(
+                    onClick = { showAdd = true },
+                    icon = { Icon(Icons.Filled.PersonAdd, null) },
+                    text = { Text("Add user") }
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { pad ->
         Column(Modifier.padding(pad)) {
             if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth()) else Spacer(Modifier.height(4.dp))
-            when (tab) {
-                0 -> UsersTab(vm) { selected = it }
+            when {
+                tab == Tab.HOME -> HomeTab(vm, onOpenLogs = { logs = it }, onSetUpCloudflare = { cloudflare = true })
+                tab == Tab.SETTINGS -> SettingsTab(vm, onCloudflare = { cloudflare = true }, onOpenLogs = { logs = it })
+                !vm.loggedIn -> ServerOffline(vm) { tabName = Tab.HOME.name }
+                tab == Tab.USERS -> UsersTab(vm) { selected = it }
                 else -> ConnectionsTab(vm)
             }
         }
@@ -301,7 +394,7 @@ fun MainScreen(vm: AppViewModel, snackbar: SnackbarHostState) {
 @Composable
 fun UsersTab(vm: AppViewModel, onOpen: (String) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { OverviewCard(vm) }
+        if (!vm.builtIn) item { OverviewCard(vm) } // built-in: shown on Home
         item {
             Text(
                 "Users (${vm.users.size})",
@@ -310,7 +403,7 @@ fun UsersTab(vm: AppViewModel, onOpen: (String) -> Unit) {
             )
         }
         if (vm.users.isEmpty() && !vm.busy) {
-            item { Text("No users yet. Tap + to add one.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(4.dp)) }
+            item { Text("No users yet. Tap \"Add user\" to create one.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(4.dp)) }
         }
         items(vm.users, key = { it.optString("username") }) { u -> UserCard(u) { onOpen(u.optString("username")) } }
     }
@@ -351,7 +444,8 @@ fun OverviewCard(vm: AppViewModel) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ServiceChip("Web", true)
                     ServiceChip("WebDAV", s.optJSONObject("webdav")?.optBoolean("is_active") == true)
-                    ServiceChip("SFTP", s.optJSONObject("ssh")?.optBoolean("is_active") == true)
+                    // The built-in server deliberately has no SFTP (users connect through Cloudflare only).
+                    if (!vm.builtIn) ServiceChip("SFTP", s.optJSONObject("ssh")?.optBoolean("is_active") == true)
                     ServiceChip("Database", s.optJSONObject("data_provider")?.optBoolean("is_active") == true)
                 }
             }
@@ -457,6 +551,27 @@ fun UserCard(u: JSONObject, onClick: () -> Unit) {
                 "${Access.of(u)?.label ?: "Custom access"} · last login ${formatTime(u.optLong("last_login"))}",
                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+/** Users/Active while the built-in server is stopped or still starting. */
+@Composable
+fun ServerOffline(vm: AppViewModel, onGoHome: () -> Unit) {
+    val starting = vm.serverState.active
+    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (starting) LinearProgressIndicator(Modifier.widthIn(max = 160.dp)) else Icon(
+                Icons.Filled.CloudOff, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                if (starting) "Connecting to the drive…" else "The drive server is stopped",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(Modifier.height(16.dp))
+            if (!starting) Button(onClick = { vm.startServer() }) { Text("Start server") }
+            TextButton(onClick = onGoHome) { Text("Go to Home") }
         }
     }
 }

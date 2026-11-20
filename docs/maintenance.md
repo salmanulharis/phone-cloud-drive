@@ -76,3 +76,19 @@ such as rclone or FreeFileSync, or copy `/sdcard/.CloudDrive` over USB/SSH (`scp
 | Termux:Boot doesn't run | Open the Termux:Boot app once; Termux and Termux:Boot must come from the same source (GitHub/F-Droid). |
 | A user's usage shows 0 B | Set `SFTPGO_DATA_PROVIDER__TRACK_QUOTA=1`, restart, then *Recalculate usage*. |
 | Photos appear in Gallery | Make sure `/sdcard/.CloudDrive/.nomedia` exists; Gallery may need a few minutes to rescan. |
+
+### Built-in server (Drive Admin app)
+
+Status, logs (Settings → Logs) and fixes are in the app; the Home screen names the problem.
+
+| Symptom | Cause / fix |
+|---|---|
+| "Port 28080 is already used by another app" | Another server app on the phone took the port. Stop that app (or its service using the port). |
+| Tunnel: "Cloudflare rejected the tunnel token" / "tunnel doesn't exist" | The tunnel was deleted or its token rotated in Cloudflare. Settings → Cloudflare → set it up again. |
+| Server stops after a while with the screen off | Allow **No battery limits** (Settings → Phone). Samsung: *Battery → Background usage limits → Never sleeping apps*. Xiaomi: *Autostart* + *No restrictions*. |
+| Server is killed on Android 12–13 even with the above | Android's phantom process limit. From a computer: `adb shell device_config set_sync_disabled_for_tests persistent` and `adb shell device_config put activity_manager max_phantom_processes 2147483647`. On Android 14+: *Developer options → Disable child process restrictions*. |
+| "Waiting: Allow All files access" | Settings → Phone → All files access. |
+
+Backups of the built-in server: the users/shares database lives in the app's private storage.
+Back up the **files** in `/sdcard/.CloudDrive` as above; users can be recreated in the app and
+keep their folders when created with the same username.

@@ -15,6 +15,11 @@ android/.kotlin/
 android/local.properties
 android/captures/
 android/.idea/
+
+# ---- built by android/native/build.sh (third-party binaries and SFTPGo's web templates) ----
+android/native/.work/
+android/app/src/main/jniLibs/
+android/app/src/main/assets/sftpgo-ui.zip
 *.iml
 *.apk
 *.aab
@@ -27,3 +32,5 @@ android/.idea/
 .DS_Store
 Thumbs.db
 *.swp
+
+references/

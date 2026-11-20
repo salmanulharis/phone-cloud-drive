@@ -82,6 +82,7 @@ fun FilesScreen(vm: AppViewModel, username: String, homeDir: String, snackbar: S
     var loading by remember { mutableStateOf(false) }
     var entries by remember { mutableStateOf<List<DriveEntry>>(emptyList()) }
     var toDelete by remember { mutableStateOf<DriveEntry?>(null) }
+    val requestAccess = rememberFilesAccessRequester()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { access = FileOps.hasAccess(ctx) }
 
@@ -135,7 +136,7 @@ fun FilesScreen(vm: AppViewModel, username: String, homeDir: String, snackbar: S
                 !access -> CenterNote(
                     "Allow file access",
                     "Drive Admin needs “All files access” to read the private drive folder. It only reads .CloudDrive.",
-                    action = "Open settings" to { ctx.startActivity(FileOps.accessSettingsIntent(ctx)) }
+                    action = "Allow" to requestAccess
                 )
                 !root.exists() -> CenterNote("Folder is empty", "Nothing has been uploaded for $username yet.")
                 else -> {

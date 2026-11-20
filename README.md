@@ -43,10 +43,15 @@
 - Auto-start after reboot (Termux:Boot), health-check and "sign out everywhere" commands
 
 **Drive Admin Android app**
+- **Runs the whole drive by itself** (built-in SFTPGo + cloudflared, no Termux): 3-step setup,
+  start/stop, auto-start after reboot, live status, logs
+- **One-tap Cloudflare setup:** creates the tunnel, routes and DNS records from an API token, or
+  takes a tunnel token
+- Admin only from the app (no admin web panel, admin API on loopback); users only through Cloudflare
 - Users, storage limits, access level (full / upload-no-delete / view-only), passwords
 - Live connections with disconnect, service status, phone storage
 - Per-user file browser with thumbnails; "Save to phone" copies a file to a public folder
-- "Stay signed in" with the password encrypted by the Android Keystore
+- Can also manage a Termux-based server ("Stay signed in" with a Keystore-encrypted password)
 
 ## How it works
 
@@ -81,8 +86,21 @@ More detail: [docs/architecture.md](docs/architecture.md).
 
 ## Quick start
 
-You need an Android phone (Android 7+), a computer for the one-time setup, and,
-for public access, a domain using Cloudflare DNS (free plan).
+There are two ways to run the drive. For public access, both need a domain using Cloudflare DNS
+(free plan).
+
+### Option A: the app only (recommended, Android 10+)
+
+1. Build the app on a computer: `bash android/native/build.sh`, then `cd android && ./gradlew assembleRelease`
+   (needs Go, the Android SDK + NDK; details in [docs/android-app.md](docs/android-app.md#build)).
+2. Install the APK on the phone and open **Drive Admin** → **Run the drive on this phone**.
+3. Allow file access and no battery limits, connect Cloudflare (automatic with an API token), start.
+4. Add users in the app. They sign in at `https://drive.<your-domain>`.
+
+### Option B: Termux (Android 7+)
+
+You need an Android phone, a computer for the one-time setup, and, for public access, a domain
+using Cloudflare DNS (free plan).
 
 1. **Prepare the phone:** install Termux and Termux:Boot (from GitHub or F-Droid), allow
    storage access, and exclude Termux from battery optimisation.
@@ -134,6 +152,7 @@ phone-cloud-drive/
 │       ├── setup-tunnel.sh        # creates the tunnel, DNS records and config
 │       └── config.yml.example     # what the generated config looks like
 ├── android/                       # Drive Admin app (Kotlin, Jetpack Compose)
+│   └── native/build.sh            # builds the app's bundled SFTPGo + cloudflared
 └── docs/                          # guides and images
 ```
 

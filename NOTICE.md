@@ -14,6 +14,19 @@ separately on your device and keeps its own licence:
 | [OpenSSH](https://www.openssh.com/) | Remote shell into the phone | BSD-style |
 | Jetpack Compose, AndroidX, Kotlin coroutines | Drive Admin app | Apache-2.0 |
 
+## The Drive Admin app's built-in server
+
+`android/native/build.sh` downloads SFTPGo and cloudflared from their official repositories and
+compiles them into the APK you build yourself (as `libsftpgo.so` and `libcloudflared.so`), together
+with SFTPGo's own web templates patched as described below. Nothing of this is committed to the
+repository (see `.gitignore`).
+
+- **SFTPGo** is AGPL-3.0: if you distribute such an APK, you must also offer the corresponding
+  source, i.e. SFTPGo's source at the pinned version plus this repository (build script and patches).
+- **cloudflared** is Apache-2.0.
+- SFTPGo's **web templates** may only be used within SFTPGo. They are used only by the bundled
+  SFTPGo, but an APK containing them should be kept for your own use rather than published.
+
 ## About the SFTPGo web UI patches
 
 SFTPGo's WebUI templates state that they may only be used within the SFTPGo product and
