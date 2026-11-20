@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
@@ -43,7 +44,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -203,12 +207,15 @@ private fun AddressesCard(vm: AppViewModel) {
 @Composable
 private fun AddressRow(icon: ImageVector, label: String, url: String, openable: Boolean = false) {
     val ctx = LocalContext.current
+    var showQr by remember { mutableStateOf(false) }
     ItemRow(icon, label, url, onClick = if (openable) ({ openUrl(ctx, url) }) else null) {
         Row {
             if (openable) IconButton(onClick = { openUrl(ctx, url) }) { Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open") }
+            IconButton(onClick = { showQr = true }) { Icon(Icons.Filled.QrCode2, "Show QR code") }
             IconButton(onClick = { copyText(ctx, label, url) }) { Icon(Icons.Filled.ContentCopy, "Copy") }
         }
     }
+    if (showQr) QrDialog(label, url) { showQr = false }
 }
 
 @Composable

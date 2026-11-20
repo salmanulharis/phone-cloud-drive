@@ -13,6 +13,7 @@ separately on your device and keeps its own licence:
 | [Termux](https://github.com/termux/termux-app) and [Termux:Boot](https://github.com/termux/termux-boot) | Linux environment and auto-start on Android | GPL-3.0 |
 | [OpenSSH](https://www.openssh.com/) | Remote shell into the phone | BSD-style |
 | Jetpack Compose, AndroidX, Kotlin coroutines | Drive Admin app | Apache-2.0 |
+| [ZXing](https://github.com/zxing/zxing) core | QR codes for the drive's addresses in the Drive Admin app | Apache-2.0 |
 
 ## The Drive Admin app's built-in server
 

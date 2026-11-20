@@ -51,6 +51,7 @@
 - Users, storage limits, access level (full / upload-no-delete / view-only), passwords
 - Live connections with disconnect, service status, phone storage
 - Per-user file browser with thumbnails; "Save to phone" copies a file to a public folder
+- QR code for every drive address (web drive, WebDAV, home Wi-Fi), to open it on another phone by scanning
 - Can also manage a Termux-based server ("Stay signed in" with a Keystore-encrypted password)
 
 ## How it works

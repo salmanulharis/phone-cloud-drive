@@ -14,8 +14,8 @@ android {
         // and All-files access for the drive folder.
         minSdk = 29
         targetSdk = 35
-        versionCode = 6
-        versionName = "2.0.0"
+        versionCode = 7
+        versionName = "2.1.0"
     }
 
     buildTypes {
@@ -76,6 +76,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-service:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // QR codes for the drive's addresses (encoder only, pure Java).
+    implementation("com.google.zxing:core:3.5.3")
 
     testImplementation("junit:junit:4.13.2")
     // Android's org.json is a stub in local unit tests; use the real implementation there.
