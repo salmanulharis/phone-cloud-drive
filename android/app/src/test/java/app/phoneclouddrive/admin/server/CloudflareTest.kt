@@ -16,6 +16,15 @@ class CloudflareTest {
     }
 
     @Test
+    fun extractsTokenFromPastedInstallCommands() {
+        val token = Base64.getEncoder().encodeToString("""{"a":"acc","t":"tunnel-id","s":"c2VjcmV0"}""".toByteArray())
+        assertEquals(token, Cloudflare.extractToken("cloudflared.exe service install $token"))
+        assertEquals(token, Cloudflare.extractToken("sudo cloudflared service install $token\n"))
+        assertEquals(token, Cloudflare.extractToken("cloudflared tunnel run --token $token"))
+        assertEquals(token, Cloudflare.extractToken("  $token "))
+    }
+
+    @Test
     fun rejectsThingsThatAreNotTunnelTokens() {
         assertNull(Cloudflare.tunnelIdFromToken(""))
         assertNull(Cloudflare.tunnelIdFromToken("not base64 !!"))

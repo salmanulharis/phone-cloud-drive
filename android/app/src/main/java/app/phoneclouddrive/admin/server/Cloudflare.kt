@@ -120,6 +120,7 @@ class Cloudflare(private val apiToken: String, private val baseUrl: String = "ht
     companion object {
         const val TUNNEL_NAME = "phone-cloud-drive"
         const val TOKEN_HELP_URL = "https://dash.cloudflare.com/profile/api-tokens"
+        const val GUIDE_URL = "https://github.com/salmanulharis/phone-cloud-drive/blob/main/docs/cloudflare-app.md"
 
         /** Malformed/invalid/expired token or missing permission (6003 = "Invalid request headers"). */
         private val AUTH_ERROR_CODES = setOf(6003, 6100, 6101, 6102, 6103, 6111, 9103, 9106, 9109, 10000, 10001)
@@ -165,6 +166,15 @@ class Cloudflare(private val apiToken: String, private val baseUrl: String = "ht
          * Checks a pasted tunnel token (base64 JSON with account "a", tunnel "t" and secret "s")
          * and returns the tunnel ID, or null if it isn't a tunnel token.
          */
+        /**
+         * Pulls the token out of whatever was pasted: the bare token, or a whole install command
+         * from the dashboard ("cloudflared.exe service install eyJ…", "… --token eyJ…").
+         */
+        fun extractToken(pasted: String): String =
+            TOKEN_IN_TEXT.find(pasted)?.value ?: pasted.trim()
+
+        private val TOKEN_IN_TEXT = Regex("""eyJ[A-Za-z0-9+/_=-]{20,}""")
+
         fun tunnelIdFromToken(token: String): String? = try {
             val json = JSONObject(String(Base64.getDecoder().decode(token.trim())))
             json.getString("t").takeIf { json.optString("a").isNotBlank() && json.optString("s").isNotBlank() }

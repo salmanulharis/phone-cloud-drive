@@ -1,6 +1,7 @@
 package app.phoneclouddrive.admin
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,8 +18,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -85,28 +89,74 @@ fun CloudflareScreen(vm: AppViewModel, snackbar: SnackbarHostState, onClose: () 
 /** The setup form, also used as a step of the first-run wizard. */
 @Composable
 fun CloudflareSetup(vm: AppViewModel, onDone: () -> Unit) {
-    var automatic by rememberSaveable { mutableStateOf(true) }
+    // Tunnel token first: it needs no API-token permissions and is the easiest to get right.
+    var automatic by rememberSaveable { mutableStateOf(false) }
     Text(
         "Cloudflare gives your drive a secure https:// address that works from anywhere, without opening " +
-            "ports on your router. You need a domain that uses Cloudflare (the free plan is enough).",
+            "ports on your router. You need a domain that uses Cloudflare (the free plan is enough). " +
+            "This app runs the tunnel itself: never install cloudflared on a computer for it.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Spacer(Modifier.height(16.dp))
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         SegmentedButton(
-            selected = automatic, onClick = { automatic = true },
-            shape = SegmentedButtonDefaults.itemShape(0, 2),
-            icon = { SegmentedButtonDefaults.Icon(automatic) { Icon(Icons.Filled.AutoAwesome, null, Modifier.size(18.dp)) } }
-        ) { Text("Automatic") }
-        SegmentedButton(
             selected = !automatic, onClick = { automatic = false },
-            shape = SegmentedButtonDefaults.itemShape(1, 2),
+            shape = SegmentedButtonDefaults.itemShape(0, 2),
             icon = { SegmentedButtonDefaults.Icon(!automatic) { Icon(Icons.Filled.Key, null, Modifier.size(18.dp)) } }
         ) { Text("Tunnel token") }
+        SegmentedButton(
+            selected = automatic, onClick = { automatic = true },
+            shape = SegmentedButtonDefaults.itemShape(1, 2),
+            icon = { SegmentedButtonDefaults.Icon(automatic) { Icon(Icons.Filled.AutoAwesome, null, Modifier.size(18.dp)) } }
+        ) { Text("Automatic") }
     }
     Spacer(Modifier.height(16.dp))
     if (automatic) AutomaticSetup(vm, onDone) else ManualSetup(vm, onDone)
+    Spacer(Modifier.height(16.dp))
+    CloudflareHelp()
+}
+
+/** Short fixes for the problems people actually hit, plus a link to the full guide. */
+@Composable
+private fun CloudflareHelp() {
+    val ctx = LocalContext.current
+    var open by rememberSaveable { mutableStateOf(false) }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.fillMaxWidth().clickable { open = !open },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.size(12.dp))
+                Text("Not working?", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Icon(if (open) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, if (open) "Hide" else "Show")
+            }
+            if (open) {
+                Text(
+                    "• Error 1033 in the browser: the drive's DNS record still points to an old tunnel. " +
+                        "Your domain › DNS › Records › edit the drive/dav CNAME to <new tunnel ID>.cfargotunnel.com (Proxied).\n" +
+                        "• 502 Bad Gateway: the route's Service URL must be http://127.0.0.1:${SftpgoConfig.WEB_PORT} " +
+                        "(WebDAV: http://127.0.0.1:${SftpgoConfig.WEBDAV_PORT}), not localhost or another port.\n" +
+                        "• \"Record already exists\" when adding a route: delete or edit the old DNS record first.\n" +
+                        "• Old tunnel from the Termux setup with greyed-out routes: it's managed by a config file. " +
+                        "Delete it and create a new one here.\n" +
+                        "• Details: Settings › Logs › Cloudflare tunnel log.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedButton(onClick = { openUrl(ctx, Cloudflare.GUIDE_URL) }) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text("Full setup guide")
+                }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -123,8 +173,10 @@ private fun AutomaticSetup(vm: AppViewModel, onDone: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         InfoCard(
             "1. Create an API token",
-            "In Cloudflare: My Profile › API Tokens › Create Token › Custom token, with these permissions:\n" +
-                "• Account › Cloudflare Tunnel › Edit\n• Zone › DNS › Edit\n• Zone › Zone › Read\n" +
+            "In Cloudflare: My Profile › API Tokens › Create Token › Custom token, with:\n" +
+                "• an Account policy: Cloudflare Tunnel › Edit\n" +
+                "• a Zone policy for your domain: DNS › Edit and Zone › Read\n" +
+                "(The account-level \"DNS & Zones\" list is not needed.) " +
                 "The token is used once for setup and is not saved on the phone."
         ) {
             OutlinedButton(onClick = { openUrl(ctx, Cloudflare.TOKEN_HELP_URL) }) {
@@ -204,14 +256,16 @@ private fun ManualSetup(vm: AppViewModel, onDone: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         InfoCard(
             "Set up the tunnel in Cloudflare",
-            "Zero Trust › Networks › Tunnels › Create a tunnel (Cloudflared). Add public hostnames:\n" +
-                "• your drive address  →  HTTP  127.0.0.1:${SftpgoConfig.WEB_PORT}\n" +
-                "• your WebDAV address  →  HTTP  127.0.0.1:${SftpgoConfig.WEBDAV_PORT}  (optional)\n" +
-                "Then copy the token from the install command (the long text after --token)."
+            "1. dash.cloudflare.com › Networking › Tunnels › Create Tunnel (Cloudflared), give it a name.\n" +
+                "2. Copy the install command shown (copy icon). Don't run it; paste it below.\n" +
+                "3. Save here, wait for \"Connected\", then in Cloudflare › Continue › Add route › " +
+                "Published application:\n" +
+                "   • drive + your domain  →  http://127.0.0.1:${SftpgoConfig.WEB_PORT}\n" +
+                "   • dav + your domain  →  http://127.0.0.1:${SftpgoConfig.WEBDAV_PORT}  (optional)"
         )
         OutlinedTextField(
-            value = token, onValueChange = { token = it.trim().removePrefix("--token").trim() },
-            label = { Text("Tunnel token") },
+            value = token, onValueChange = { token = Cloudflare.extractToken(it) },
+            label = { Text("Tunnel token (or the whole install command)") },
             visualTransformation = PasswordVisualTransformation(),
             textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
             singleLine = true,

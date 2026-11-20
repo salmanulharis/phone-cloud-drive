@@ -94,7 +94,7 @@ There are two ways to run the drive. For public access, both need a domain using
 1. Build the app on a computer: `bash android/native/build.sh`, then `cd android && ./gradlew assembleRelease`
    (needs Go, the Android SDK + NDK; details in [docs/android-app.md](docs/android-app.md#build)).
 2. Install the APK on the phone and open **Drive Admin** → **Run the drive on this phone**.
-3. Allow file access and no battery limits, connect Cloudflare (automatic with an API token), start.
+3. Allow file access and no battery limits, connect Cloudflare ([step-by-step guide](docs/cloudflare-app.md)), start.
 4. Add users in the app. They sign in at `https://drive.<your-domain>`.
 
 ### Option B: Termux (Android 7+)
@@ -125,7 +125,8 @@ Check everything with `drive-status` in Termux.
 |---|---|
 | [Requirements](docs/requirements.md) | Hardware, accounts, tools and versions |
 | [Setup](docs/setup.md) | Step-by-step installation on the phone |
-| [Cloudflare Tunnel](docs/cloudflare-tunnel.md) | Public HTTPS hostnames, DNS, alerts |
+| [Cloudflare for the app](docs/cloudflare-app.md) | Connect the app's built-in server: tunnel token or automatic, troubleshooting |
+| [Cloudflare Tunnel (Termux)](docs/cloudflare-tunnel.md) | Public HTTPS hostnames, DNS, alerts for the Termux setup |
 | [Configuration](docs/configuration.md) | Every setting in `drive.env`, ports, paths |
 | [Android app](docs/android-app.md) | Build, install and use Drive Admin |
 | [Architecture](docs/architecture.md) | Components, data flow, sessions, file layout |

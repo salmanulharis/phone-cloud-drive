@@ -1,5 +1,8 @@
 # Public HTTPS access with Cloudflare Tunnel
 
+> This guide is for the **Termux** setup. Using the Drive Admin app's built-in server? Follow
+> [cloudflare-app.md](cloudflare-app.md) instead.
+
 A named Cloudflare Tunnel gives the drive permanent HTTPS addresses such as
 `https://drive.example.com` and `https://dav.example.com`, without opening router ports and
 without exposing your home IP. `cloudflared` on the phone keeps an **outbound** connection to

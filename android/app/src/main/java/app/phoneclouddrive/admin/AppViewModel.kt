@@ -160,7 +160,7 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun saveManualTunnel(token: String, drive: String, dav: String, onDone: () -> Unit) = task {
-        val t = token.trim().removePrefix("cloudflared service install").trim()
+        val t = Cloudflare.extractToken(token)
         if (Cloudflare.tunnelIdFromToken(t) == null) error("That doesn't look like a tunnel token. Copy it from the tunnel's install command.")
         saveTunnel(t, cleanHost(drive), cleanHost(dav))
         notice = "Tunnel saved"

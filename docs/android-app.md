@@ -53,6 +53,8 @@ flowchart LR
 
 ### Cloudflare connection
 
+Step-by-step guide and troubleshooting: [cloudflare-app.md](cloudflare-app.md).
+
 Settings → **Set up Cloudflare** (or step 2 of the wizard) offers two ways:
 
 1. **Automatic:** create an API token in Cloudflare (*My Profile → API Tokens → Custom token*)
